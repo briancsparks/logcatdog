@@ -128,7 +128,9 @@ scanLoop:
       log.Fatal(err)
     }
 
-    // TODO: peg dispose
+    if err = adb.peg.Dispose(); err != nil {
+      log.Fatal(err)
+    }
 
     adb.done <- struct{}{}
   }()
