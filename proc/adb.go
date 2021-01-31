@@ -67,12 +67,13 @@ func (adb *Adb) Initit() (chan struct{}, error) {
     }
     fmt.Printf("devices: %v\n", devices)
 
+    cmd := exec.Command("adb", "-d", "logcat", "-d", "-b", "all", "-v", "threadtime", "-v", "usec", "-v", "year", "-v", "UTC", "-v", "epoch")
+
     // TODO: Kill on non-Windows
     // Killing a sub-process: https://medium.com/@felixge/killing-a-child-process-and-all-of-its-children-in-go-54079af94773
-
-    cmd := exec.Command("adb", "-d", "logcat", "-d", "-b", "all", "-v", "threadtime", "-v", "usec", "-v", "year", "-v", "UTC", "-v", "epoch")
     //cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
     //syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+
     adbStdout, err := cmd.StdoutPipe()
     if err != nil {
       log.Fatal(err)
@@ -83,28 +84,28 @@ func (adb *Adb) Initit() (chan struct{}, error) {
       //defer close(adb.DataStream)
 
       count := 0
-      fmt.Printf("entering scan0()\n")
+      //fmt.Printf("entering scan0()\n")
 scanLoop:
       for scanner.Scan() {
-        fmt.Printf("got item from scan()\n")
-        fmt.Printf("ADBBBBB |%s\n", scanner.Text())
+        //fmt.Printf("got item from scan()\n")
+        //fmt.Printf("ADBBBBB |%s\n", scanner.Text())
         l := NewLogcatLineData(count, scanner.Text())
         adb.DataStream <- l
         count += 1
 
         // stop?
-        fmt.Printf("selecting\n")
+        //fmt.Printf("selecting\n")
         select {
         case <-adb.stop:
-          fmt.Printf("select adb.stopping\n")
+          //fmt.Printf("select adb.stopping\n")
           break scanLoop
         default:
           // nothing, not stopping
-          fmt.Printf("select defaulting\n")
+          //fmt.Printf("select defaulting\n")
         }
-        fmt.Printf("entering scan()\n")
+        //fmt.Printf("entering scan()\n")
       }
-      fmt.Printf("exiting scan()\n")
+      //fmt.Printf("exiting scan()\n")
 
       close(adb.DataStream)
     }()
@@ -126,6 +127,8 @@ scanLoop:
     if err = cmd.Wait(); err != nil {
       log.Fatal(err)
     }
+
+    // TODO: peg dispose
 
     adb.done <- struct{}{}
   }()

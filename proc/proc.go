@@ -5,10 +5,6 @@ import (
   "os/exec"
 )
 
-//func StartAdbX() (chan struct{}, error) {
-//  return startAdb()
-//}
-
 func QuickLaunch(name string, args ...string) (string, error) {
   var (
     output []byte
