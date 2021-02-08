@@ -41,17 +41,25 @@ func NewProcessExitGroup() (ProcessExitGroup, error) {
   return ProcessExitGroup(handle), nil
 }
 
-func (g ProcessExitGroup) Dispose() error {
-  return windows.CloseHandle(windows.Handle(g))
-}
-
 func (g ProcessExitGroup) AddProcess(p *os.Process) error {
   return windows.AssignProcessToJobObject(
     windows.Handle(g),
     windows.Handle((*process)(unsafe.Pointer(p)).Handle))
 }
 
-func (g ProcessExitGroup) Terminate(exitcode uint32) error {
+func (g ProcessExitGroup) Terminate(exitcode uint32)  {
+  _ = windows.TerminateJobObject(windows.Handle(g), exitcode)
+}
+
+func (g ProcessExitGroup) Terminate2(exitcode uint32) error {
   return windows.TerminateJobObject(windows.Handle(g), exitcode)
+}
+
+func (g ProcessExitGroup) Dispose() {
+  _ = windows.CloseHandle(windows.Handle(g))
+}
+
+func (g ProcessExitGroup) Dispose2() error {
+  return windows.CloseHandle(windows.Handle(g))
 }
 

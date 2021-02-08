@@ -7,25 +7,15 @@ import (
   "os/exec"
   "regexp"
   "strings"
+
+  "bcs/logcatdog/linebyline"
 )
 
-type LogcatLineData struct {
-  LineNum int
-  Line string
-}
-
-func NewLogcatLineData(lineNum int, line string) LogcatLineData {
-  l := new(LogcatLineData)
-
-  l.Line = line
-  l.LineNum = lineNum
-
-  return *l
-}
 
 type Adb struct {
 
-  DataStream chan LogcatLineData
+  DataStream chan linebyline.LineData
+  DataStream2 chan linebyline.LineData
 
   Start chan struct{}
   stop  chan struct{}
@@ -38,7 +28,8 @@ type Adb struct {
 func NewAdb() Adb {
   adb := new(Adb)
 
-  adb.DataStream = make(chan LogcatLineData)
+  adb.DataStream = make(chan linebyline.LineData)
+  adb.DataStream2 = make(chan linebyline.LineData)
   adb.Start = make(chan struct{})
   adb.stop = make(chan struct{})
   adb.done = make(chan struct{})
@@ -61,7 +52,7 @@ func (adb *Adb) Initit() (chan struct{}, error) {
   go func() {
     <- adb.Start
 
-    devices, err := adbDevices()
+    devices, err := AdbDevices()
     if err != nil {
       log.Fatal(err)
     }
@@ -82,6 +73,7 @@ func (adb *Adb) Initit() (chan struct{}, error) {
     scanner := bufio.NewScanner(adbStdout)
     go func() {
       //defer close(adb.DataStream)
+      //defer close(adb.DataStream2)
 
       count := 0
       //fmt.Printf("entering scan0()\n")
@@ -89,8 +81,9 @@ scanLoop:
       for scanner.Scan() {
         //fmt.Printf("got item from scan()\n")
         //fmt.Printf("ADBBBBB |%s\n", scanner.Text())
-        l := NewLogcatLineData(count, scanner.Text())
+        l := linebyline.NewLineData(count, scanner.Text(), "-")
         adb.DataStream <- l
+        adb.DataStream2 <- l
         count += 1
 
         // stop?
@@ -108,6 +101,7 @@ scanLoop:
       //fmt.Printf("exiting scan()\n")
 
       close(adb.DataStream)
+      close(adb.DataStream2)
     }()
 
     if err = cmd.Start(); err != nil {
@@ -128,9 +122,10 @@ scanLoop:
       log.Fatal(err)
     }
 
-    if err = adb.peg.Dispose(); err != nil {
-      log.Fatal(err)
-    }
+    adb.peg.Dispose()
+    //if err = adb.peg.Dispose(); err != nil {
+    //  log.Fatal(err)
+    //}
 
     adb.done <- struct{}{}
   }()
@@ -139,7 +134,7 @@ scanLoop:
 }
 
 // --------------------------------------------------------------------------------------------------------------------
-func adbDevices() ([]string, error) {
+func AdbDevices() ([]string, error) {
   output, err := QuickLaunch("adb", "-d", "devices")
   if err != nil {
     log.Fatal(err)
