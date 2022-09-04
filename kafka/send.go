@@ -19,7 +19,8 @@ func Send(done <-chan struct{}, in <-chan lbl.LineData, topic string)  {
     config := sarama.NewConfig()
     config.Producer.Return.Successes = true
 
-    pUrl := "sparksb6-wsl2.cdr0.net:9092"
+    //pUrl := "sparksb6-wsl2.cdr0.net:9092"
+    pUrl := "127.0.0.1:9092"
     producer, err := sarama.NewAsyncProducer([]string{pUrl}, config)
     if err != nil {
       fmt.Printf("Is the IP of url (%s) right?", pUrl)

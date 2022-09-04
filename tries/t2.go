@@ -6,7 +6,9 @@ import (
   "bcs/logcatdog/proc"
   "fmt"
   "log"
+  "regexp"
   "sync"
+  "time"
 )
 
 func M() {
@@ -57,7 +59,9 @@ func M() {
     }
   }()
 
-  kafka.Send(done, adbLines2, "logcatter")
+  m1 := regexp.MustCompile(`[^a-zA-Z0-9]`)
+  date := m1.ReplaceAllString(time.Now().UTC().Format("2006-01-02T15:04:05.000000000Z"), "_")
+  kafka.Send(done, adbLines2, "logcatter_" + date)
 
   wg.Wait()
 
